@@ -6,6 +6,7 @@ from langchain_text_splitters import RecursiveCharacterTextSplitter
 from langchain_openai import OpenAIEmbeddings
 from langchain_ollama import OllamaEmbeddings
 from langchain_community.vectorstores import FAISS
+from langchain_core.documents import Document
 from dotenv import load_dotenv
 load_dotenv()
 
@@ -58,6 +59,40 @@ def load_gate_answer_key(answer_key_pdf_path):
                 if q_type=="MCQ" and key in ["A","B","C","D"]:
                     answer_map[str(q_no)]=key
     return answer_map
+
+def load_pyq_question(question_pdf_path,answer_map,year):
+    loader=PyPDFLoader(question_pdf_path)
+    pages=loader.load()
+
+    documents=[]
+    for page in pages:
+        text=page.page_content
+
+        questions=re.split(r"\n(\d+)\.",text)
+
+        for i in range(1,len(questions),2):
+            q_no=questions[i]
+            q_text=questions[i+1]
+
+            if q_no not in answer_map:
+                continue
+            content=f"""
+GATE QUESTION {q_no}:
+
+{q_text}
+            """
+
+            metadata={
+                "source":"pyq",
+                "year":year,
+                "question_no":q_no,
+                "correct_option":answer_map[q_no]
+            }
+
+            documents.append(
+                Document(page_content=content,metadata=metadata)
+            )
+    return documents
 
 def main():
     notes_path="data/notes"
