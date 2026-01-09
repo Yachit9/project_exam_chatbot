@@ -7,3 +7,10 @@ pypdf
 python-dotenv
 langchain-ollama
 pdfplumber
+fastapi
+uvicorn
+langchain
+langchain-community
+langchain-ollama
+faiss-cpu
+pydantic
