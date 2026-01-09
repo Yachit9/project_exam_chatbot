@@ -1,5 +1,6 @@
 import os
 import re
+import pdfplumber
 from langchain_community.document_loaders import PyPDFLoader
 from langchain_text_splitters import RecursiveCharacterTextSplitter
 from langchain_openai import OpenAIEmbeddings
@@ -40,6 +41,24 @@ def create_vectorstore(chunks):
     )
     vectorstore.save_local('vectorstore/fiass_index/')
 
+def load_gate_answer_key(answer_key_pdf_path):
+    answer_map={}
+
+    with pdfplumber.open(answer_key_pdf_path) as pdf:
+        for page in pdf.pages:
+            table=page.extract_table()
+
+            if not table:
+                continue
+            for row in table[1:]:
+                q_no=row[0]
+                q_type=row[2]
+                key=row[4]
+
+                if q_type=="MCQ" and key in ["A","B","C","D"]:
+                    answer_map[str(q_no)]=key
+    return answer_map
+
 def main():
     notes_path="data/notes"
 
@@ -55,6 +74,9 @@ def main():
     create_vectorstore(chunks)
 
     print("Notes ingestion complete")
+
+    answers=load_gate_answer_key("data/pyq/answers/gate_2025_answer.pdf")
+    print(list(answers.items())[:10])
 
 if __name__=="__main__":
     main()
